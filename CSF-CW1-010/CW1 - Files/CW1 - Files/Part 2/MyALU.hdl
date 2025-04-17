@@ -1,0 +1,78 @@
+/**
+ * The MyALU. is the ALU of YOUR OWN design that provides the same functions as in the Nand2Tetris project + additional functions (and uses different control bits.
+ * Computes one of the following functions:
+ * x+y, x-y, y-x, 0, 1, -1, x, y, -x, -y, !x, !y,
+ * x+1, y+1, x-1, y-1, x&y, x|y , x XOR y, x NXOR y on two 16-bit inputs, 
+ * according to 6 input bits denoted zx,nx,zy,ny,f,no.
+ * In addition, the ALU computes two 1-bit outputs:
+ * if the ALU output == 0, zr is set to 1; otherwise zr is set to 0;
+ * if the ALU output < 0, ng is set to 1; otherwise ng is set to 0.
+ */
+
+// Implementation: the ALU logic manipulates the x and y inputs
+
+
+CHIP MyALU {
+    IN  
+        x[16], y[16],  // 16-bit inputs        
+        C0,  // Control Bit 0 (Least significant) 
+        C1,  // Control Bit 1
+        C2,  // Control Bit 2
+        C3,  // Control Bit 3
+		C4;  // Control Bit 4 (Most significant - 5th Control bit)
+        
+    OUT 
+        out[16], // 16-bit output
+        zr, // 1 if (out == 0), 0 otherwise
+        ng; // 1 if (out < 0),  0 otherwise
+
+    PARTS:
+		Not16(in=one,out=zero); //0
+		Inc16(in=false,out=one); //1
+		Inc16(in=zero,out=negone); //-1
+		Inc16(in=notx,out=negx); //-x
+		Inc16(in=noty,out=negy); //-y
+		Not16(in=x,out=notx); //!x
+		Not16(in=y,out=noty); //!y
+		Inc16(in=x,out=x1); //x+1
+		Inc16(in=y,out=y1); //y+1
+		Add16(a=x,b[0..15]=true,out=x-1); //x-1
+		Add16(a=y,b[0..15]=true,out=y-1); //y-1
+		Add16(a=x,b=y,out=xy); //x+y
+		Add16(a=x,b=negy,out=x-y); //x-y
+		Add16(a=negx,b=y,out=y-x); //y-x
+		And16(a=x,b=y,out=xandy); //x AND y
+		Or16(a=x,b=y,out=xory); //x OR Y
+		Xor16(a=x,b=y, out=xXory); //x XOR y
+		Xnor16(a=x, b=y, out=xXnory); //x XNOR y
+
+		Mux16(a=false,b=one,sel=C0,out=out1); //0 and 1 
+		Mux16(a=negone,b=x,sel=C0,out=out2); //-1 andn x
+		Mux16(a=y,b=notx,sel=C0,out=out3); //x and !x
+		Mux16(a=noty,b=negx,sel=C0,out=out4); //!y and -x
+		Mux16(a=negy,b=x1,sel=C0,out=out5); //-y and x+1
+		Mux16(a=y1,b=x-1,sel=C0,out=out6); //y+1 and x-1
+		Mux16(a=y-1,b=xy,sel=C0,out=out7); //y-1 and x+y
+		Mux16(a=x-y,b=y-x,sel=C0,out=out8); //x-y and y-x
+		Mux16(a=xandy,b=xory,sel=C0,out=out9); //x AND y and x OR Y
+		Mux16(a=xXory,b=xXnory,sel=C0,out=out10); //x XOR y and x XNOR y
+
+		Mux16(a=out1,b=out2,sel=C1,out=output1);
+		Mux16(a=out3,b=out4,sel=C1,out=output2);
+		Mux16(a=out5,b=out6,sel=C1,out=output3);
+		Mux16(a=out7,b=out8,sel=C1,out=output4);
+		Mux16(a=out9,b=out10,sel=C1,out=output5);
+
+		Mux16(a=output1,b=output2,sel=C2,out=rsl1);
+		Mux16(a=output3,b=output4,sel=C2,out=rsl2);
+
+		Mux16(a=rsl1,b=rsl2,sel=C3,out=rslt1);
+
+		Mux16(a=rslt1,b=output5,sel=C4,out=out,out[0..7]=orway1,out[8..15]=orway2,out[15]=a);
+
+		Or8Way(in=orway1,out=orway3);
+		Or8Way(in=orway2,out=orway4);
+		Or(a=orway3,b=orway4,out=outzr);
+		Not(in=outzr,out=zr);
+		And(a=a,b=true,out=ng);
+}

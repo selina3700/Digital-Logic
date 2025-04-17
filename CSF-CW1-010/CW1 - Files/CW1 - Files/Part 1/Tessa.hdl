@@ -1,0 +1,10 @@
+CHIP Tessa {
+    IN A, B, C, D;
+    OUT F;
+
+    PARTS:
+        And(a=A, b=B, out=F);
+}
+
+
+
